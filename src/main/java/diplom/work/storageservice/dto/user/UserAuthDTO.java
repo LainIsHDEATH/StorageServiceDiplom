@@ -1,5 +1,5 @@
 package diplom.work.storageservice.dto.user;
 
-public record UserAuthDTO(String username,
+public record UserAuthDTO(String email,
                           String password) {
 }

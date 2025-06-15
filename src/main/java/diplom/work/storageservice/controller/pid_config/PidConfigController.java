@@ -50,9 +50,18 @@ public class PidConfigController {
 
     @PostMapping("/room-configs/{roomId}")
     public ResponseEntity<PidConfigDTO> create(@PathVariable Long roomId,
-                                               @RequestBody PidConfigDTO pidConfigDTO) {
-        PidConfig pidConfig = pidConfigMapper.toEntity(pidConfigDTO);
+                                               @RequestBody PidConfigDTO dto) {
 
+        dto = new PidConfigDTO(
+                dto.id(),
+                Math.round(dto.kp() * 1000) / 1000.0,
+                Math.round(dto.ki() * 1000) / 1000.0,
+                Math.round(dto.kd() * 1000) / 1000.0,
+                dto.tunedMethod(),
+                dto.active()
+        );
+
+        PidConfig pidConfig = pidConfigMapper.toEntity(dto);
         return ResponseEntity.status(201).body(
                 pidConfigMapper.toDto(
                         pidConfigService.createManual(roomId, pidConfig)));
@@ -60,13 +69,13 @@ public class PidConfigController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PidConfigDTO> getConfigById(@PathVariable Long id) {
-        return pidConfigService.findById(id)
+        var config = pidConfigService.findById(id)
                 .map(pidConfigMapper::toDto)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok);
+        return config.orElse(ResponseEntity.notFound().build());
     }
 
-    @PatchMapping("/{configId}")
+    @PutMapping("/{configId}")
     public ResponseEntity<?> update(@PathVariable Long configId,
                                     @RequestBody PidConfigDTO pidConfigDTO) {
         PidConfig pidConfig = pidConfigMapper.toEntity(pidConfigDTO);

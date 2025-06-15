@@ -1,5 +1,6 @@
 package diplom.work.storageservice.util;
 
+import diplom.work.storageservice.dto.user.UserAuthDTO;
 import diplom.work.storageservice.dto.user.UserRegisterDTO;
 import diplom.work.storageservice.dto.user.UserResponseDTO;
 import diplom.work.storageservice.dto.user.UserUpdateDTO;
@@ -11,6 +12,7 @@ import org.mapstruct.ReportingPolicy;
 public interface UserMapper {
     User toEntity(UserRegisterDTO userRegisterDTO);
     User toEntity(UserUpdateDTO userUpdateDTO);
+    User toEntity(UserAuthDTO userAuthDTO);
 //    User toEntity(UserAuthDTO userAuthDTO);
     UserResponseDTO toDto(User user);
 }

@@ -10,19 +10,20 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PidConfig {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "kp", nullable = false)
+    @Column(name = "kp", nullable = false, scale = 3)
     private double kp;
 
-    @Column(name = "ki", nullable = false)
+    @Column(name = "ki", nullable = false, scale = 3)
     private double ki;
 
-    @Column(name = "kd", nullable = false)
+    @Column(name = "kd", nullable = false, scale = 3)
     private double kd;
 
     @Column(name = "tuned_method", length = 32)

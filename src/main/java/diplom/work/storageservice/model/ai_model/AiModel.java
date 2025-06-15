@@ -25,6 +25,9 @@ public class AiModel {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "is_active")
+    private boolean active = true;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;

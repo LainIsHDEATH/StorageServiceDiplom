@@ -1,9 +1,6 @@
 package diplom.work.storageservice.controller.user;
 
-import diplom.work.storageservice.dto.user.UserListResponseDTO;
-import diplom.work.storageservice.dto.user.UserRegisterDTO;
-import diplom.work.storageservice.dto.user.UserResponseDTO;
-import diplom.work.storageservice.dto.user.UserUpdateDTO;
+import diplom.work.storageservice.dto.user.*;
 import diplom.work.storageservice.model.user.User;
 import diplom.work.storageservice.service.user.UserService;
 import diplom.work.storageservice.util.UserMapper;
@@ -31,6 +28,12 @@ public class UserController {
                         userService.registerUser(user)));
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<UserResponseDTO> loginUser(@RequestBody UserAuthDTO userDTO) {
+        User user = userService.loginUser(userDTO.email(), userDTO.password());
+        return ResponseEntity.ok(userMapper.toDto(user));
+    }
+
 
     @GetMapping("/email/{email}")
     public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
@@ -40,7 +43,7 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/username{username}")
+    @GetMapping("/username/{username}")
     public ResponseEntity<UserResponseDTO> getUserByUsername(@PathVariable String username) {
         return userService.findByUsername(username)
                 .map(userMapper::toDto)

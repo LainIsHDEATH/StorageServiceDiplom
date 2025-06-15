@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,6 +38,17 @@ public class UserService {
     @Transactional
     public User registerUser(User user) {
         return userRepository.save(user);
+    }
+
+    public User loginUser(String email, String rawPassword) {
+        User dbUser = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("User with email %s not found".formatted(email)));
+
+        if (!Objects.equals(rawPassword, dbUser.getPassword())) {
+            throw new EntityNotFoundException("Password does not match");
+        }
+        return dbUser;
     }
 
     @Transactional

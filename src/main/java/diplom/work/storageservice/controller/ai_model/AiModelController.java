@@ -13,9 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URI;
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/models")
 @RequiredArgsConstructor
@@ -46,7 +43,7 @@ public class AiModelController {
 
     @PostMapping("/room-models/{roomId}")
     public ResponseEntity<AiModelDTO> createModel(@PathVariable Long roomId,
-                                             @RequestBody AiModelDTO aiModelDTO) {
+                                                  @RequestBody AiModelDTO aiModelDTO) {
         AiModel aiModel = aiModelMapper.toEntity(aiModelDTO);
 
         return ResponseEntity.status(201).body(

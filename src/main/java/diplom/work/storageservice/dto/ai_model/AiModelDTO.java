@@ -4,6 +4,7 @@ public record AiModelDTO(
         Long id,
         String type,
         String path,
-        String description
+        String description,
+        Boolean active
 ) {
 }

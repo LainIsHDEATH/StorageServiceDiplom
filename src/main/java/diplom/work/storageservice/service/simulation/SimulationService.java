@@ -49,6 +49,14 @@ public class SimulationService {
     }
 
     @Transactional
+    public Simulation setStatus(long id, Simulation.Status status) {
+        if (simulationRepository.updateStatus(id, status) == 0) {
+            throw new EntityNotFoundException("Simulation " + id + " not found");
+        }
+        return simulationRepository.findById(id).orElseThrow();
+    }
+
+    @Transactional
     public void deleteSimulation(Long simulationId) {
         simulationRepository.deleteById(simulationId);
     }

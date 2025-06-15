@@ -60,7 +60,7 @@ public class SimulationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PatchMapping("/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<?> updateSimulation(@PathVariable Long id,
                                         @RequestBody SimulationDTO simulationDTO) {
         Simulation simulationDetails = simulationMapper.toEntity(simulationDTO);
@@ -72,6 +72,24 @@ public class SimulationController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(e.getMessage());
         }
+    }
+
+    @PutMapping("/running/{id}")
+    public ResponseEntity<SimulationDTO> markRunning(@PathVariable Long id) {
+        Simulation sim = simulationService.setStatus(id, Simulation.Status.RUNNING);
+        return ResponseEntity.ok(SimulationDTO.fromEntity(sim));
+    }
+
+    @PutMapping("/finished/{id}")
+    public ResponseEntity<SimulationDTO> markFinished(@PathVariable Long id) {
+        Simulation sim = simulationService.setStatus(id, Simulation.Status.FINISHED);
+        return ResponseEntity.ok(SimulationDTO.fromEntity(sim));
+    }
+
+    @PutMapping("/failed/{id}")
+    public ResponseEntity<SimulationDTO> markFailed(@PathVariable Long id) {
+        Simulation sim = simulationService.setStatus(id, Simulation.Status.FAILED);
+        return ResponseEntity.ok(SimulationDTO.fromEntity(sim));
     }
 
     @DeleteMapping("/{id}")

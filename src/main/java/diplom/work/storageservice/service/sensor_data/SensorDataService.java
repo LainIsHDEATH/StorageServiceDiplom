@@ -5,6 +5,10 @@ import diplom.work.storageservice.repository.sensor_data.SensorDataRepository;
 import diplom.work.storageservice.service.simulation.SimulationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +33,11 @@ public class SensorDataService {
 
     public List<SensorData> getAllBySimulationId(Long simulationId) {
         return sensorRepository.findAllBySimulationId(simulationId);
+    }
+
+    public Page<SensorData> getPage(Long simId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        return sensorRepository.findBySimulationId(simId, pageable);
     }
 
     @Transactional

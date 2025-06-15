@@ -22,11 +22,19 @@ public class Simulation implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "controller_type")
-    private String controllerType;
+    private ControllerType controllerType;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private String status;
+    private Status status = Status.CREATED;
+
+    @Column(name = "iterations")
+    private Long iterations;
+
+    @Column(name = "timestep_seconds")
+    private Integer timestepSeconds;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
@@ -34,4 +42,7 @@ public class Simulation implements Serializable {
 
     @OneToMany(mappedBy = "simulation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SensorData> events = new ArrayList<>();
+
+    public enum Status { CREATED, RUNNING, FINISHED, FAILED }
+    public enum ControllerType { PID, PID_LSTM, RL, TRAIN_RL, AUTOTUNE_PID }
 }

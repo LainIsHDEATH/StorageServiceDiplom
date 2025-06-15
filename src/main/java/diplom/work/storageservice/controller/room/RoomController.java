@@ -20,6 +20,7 @@ public class RoomController {
     @PostMapping("/{userId}")
     public ResponseEntity<RoomDTO> saveRoom(@PathVariable Long userId,
                                             @RequestBody RoomDTO roomDTO) {
+        System.out.println(roomDTO.toString());
         Room room = roomMapper.toEntity(roomDTO);
 
         return ResponseEntity.status(201).body(

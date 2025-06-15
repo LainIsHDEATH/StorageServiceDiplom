@@ -45,6 +45,7 @@ public class PidConfigService {
         // Проверка, что комната существует
         var room = roomService.findRoomById(roomId).orElseThrow(
                 () -> new EntityNotFoundException("Room with ID " + roomId + " not found."));
+        System.out.println(room.getId());
 
         // Дезактивируем старые
         pidConfigRepository.deactivateAllForRoom(roomId);
@@ -53,7 +54,7 @@ public class PidConfigService {
         pidConfig.setRoom(room);
         pidConfig.setActive(true);
 
-        return pidConfig;
+        return pidConfigRepository.save(pidConfig);
     }
 
     /** Обновить существующий конфиг */

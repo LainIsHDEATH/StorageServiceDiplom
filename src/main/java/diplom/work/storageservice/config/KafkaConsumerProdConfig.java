@@ -34,17 +34,11 @@ public class KafkaConsumerProdConfig {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
 
-        // Отключаем автокоммит — будем подтверждать вручную
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        // Настроим группу
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "storage-group");
-        // Максимальное число записей за один poll
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "500");
-        // Три попытки при неудачном десериализаторе
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "diplom.work.storageservice.dto.sensor_data");
-        // Укажем, что payload — конкретный класс
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "diplom.work.storageservice.dto.sensor_data.SensorDataDTO");
-        // Всё, что связано с JsonDeserializer — только через проперти!
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false); //если надо отключить type headers
         return props;
     }
@@ -77,7 +71,6 @@ public class KafkaConsumerProdConfig {
         return factory;
     }
 
-    // Для DeadLetterPublishingRecoverer вам нужен kafkaTemplate<String, Object>
     @Bean
     public KafkaTemplate<String, Object> kafkaTemplate(
             ProducerFactory<String, Object> pf

@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -19,95 +21,86 @@ public class MetricsService {
 
         List<SensorData> rows =
                 repo.findAllBySimulationIdOrderByTimestampAsc(simulationId);
-
-        if (rows.isEmpty()) return new MetricsDTO(0,0,0,0,0, 0);
-
-        /* ------- подготовка ------- */
-        // шаг симуляции берём из двух первых отметок
-        double dt = Duration.between(
+        double dtSeconds = Duration.between(
                 rows.get(0).getTimestamp(),
                 rows.get(1).getTimestamp()
-        ).toSeconds();                         // в секундах
+        ).toSeconds();
 
-        /* ------- аккумуляторы ------- */
-        double absErrSum = 0;          // для MAE
-        double sqErrSum  = 0;          // для MSE / RMSE
-        double joules    = 0;          // энергия, Дж
-        double maxOvershoot = 0;       // максимальный OS
+        List<Double> actualTemps = new ArrayList<>();
+        List<Double> setpointTemps = new ArrayList<>();
+        List<Double> powersKw = new ArrayList<>();
 
-        double EPS = 0.5;                   // допуск ±0.5 °C
-        double settlingTime = -1;           // якщо не знайдемо – повернемо -1
-        double worstSettling = 0;   // найдовший час
+        for (SensorData row : rows) {
+            actualTemps.add(row.getTempIn());
+            setpointTemps.add(row.getTempSetpoint());
+            powersKw.add(row.getHeaterPower() / 1000.0);
+        }
 
-        boolean inTransient = false;        // йде перехід?
-        int    t0Index      = 0;            // індекс початку переходу
+        int n = actualTemps.size();
+        if (setpointTemps.size() != n || powersKw.size() != n)
+            throw new IllegalArgumentException("Усі списки мають бути однакової довжини");
+        if (n == 0)
+            throw new IllegalArgumentException("Порожні вибірки");
 
-        /* ------- переменные сегмента переходного процесса ------- */
-        double currentSet = rows.get(0).getTempSetpoint();
-        double segMaxTemp = rows.get(0).getTempIn();
+        double absSum = 0.0, sqSum = 0.0;
+        for (int i = 0; i < n; i++) {
+            double diff = actualTemps.get(i) - setpointTemps.get(i);
+            absSum += Math.abs(diff);
+            sqSum += diff * diff;
+        }
+        double mae = absSum / n;
+        double mse = sqSum / n;
+        double rmse = Math.sqrt(mse);
 
-        for (int i = 0; i < rows.size(); i++) {
-            SensorData s = rows.get(i);
+        double dtHours = dtSeconds / 3600.0;
+        double energyKWh = 0.0;
+        for (double p : powersKw) {
+            energyKWh += p * dtHours;
+        }
 
-            /* --- виявили зміну уставки --- */
-            if (i > 0 && s.getTempSetpoint() != rows.get(i - 1).getTempSetpoint()) {
-                inTransient = true;
-                t0Index     = i;            // початок нового переходу
-            }
+        double initialSp = setpointTemps.get(0);
+        int stepIndex = 0;        // t0
+        double newSetpoint = initialSp;
 
-            /* --- якщо у фазі врегулювання --- */
-            if (inTransient) {
-                // перевіряємо: помилка останнього зразка <= EPS?
-                double err = Math.abs(s.getTempIn() - s.getTempSetpoint());
-                if (err > EPS) continue;    // ще не втрималися у смузі
-
-                // тепер дивимося, чи ВСІ наступні зразки в межах ±EPS
-                boolean allInside = true;
-                for (int j = i; j < rows.size(); j++) {
-                    double e = Math.abs(rows.get(j).getTempIn()
-                            - rows.get(j).getTempSetpoint());
-                    if (e > EPS) { allInside = false; break; }
-                }
-                if (allInside) {
-                    Duration d = Duration.between(rows.get(t0Index).getTimestamp(),
-                            s.getTimestamp());
-                    worstSettling = Math.max(worstSettling, d.toSeconds());
-                    inTransient = false;       // дозволяємо ловити наступний перехід
-                }
-            }
-
-            /* --- 1.   ошибки --- */
-            double err = s.getTempIn() - s.getTempSetpoint();
-            absErrSum += Math.abs(err);       // Σ|e|  :contentReference[oaicite:10]{index=10}
-            sqErrSum  += err * err;           // Σe²   :contentReference[oaicite:11]{index=11}
-
-            /* --- 2.   энергия --- */
-            // P (Вт) * dt (с) = Дж; 1 кВт·ч = 3 600 000 Дж.
-            joules += s.getHeaterPower() * dt;   // (2.13) :contentReference[oaicite:12]{index=12}
-
-            /* --- 3.   перерегулирование --- */
-            // если уставка сменилась – закрываем прошлый сегмент
-            if (Double.compare(s.getTempSetpoint(), currentSet) != 0) {
-                maxOvershoot = Math.max(maxOvershoot,
-                        Math.max(0, segMaxTemp - currentSet)); // (2.16) :contentReference[oaicite:13]{index=13}
-                // начать новый сегмент
-                currentSet = s.getTempSetpoint();
-                segMaxTemp = s.getTempIn();
-            } else {
-                segMaxTemp = Math.max(segMaxTemp, s.getTempIn());
+        for (int i = 1; i < n; i++) {
+            if (!Objects.equals(setpointTemps.get(i), initialSp)) {
+                stepIndex = i;
+                newSetpoint = setpointTemps.get(i);
+                break;
             }
         }
-        // закрываем последний сегмент
-        maxOvershoot = Math.max(maxOvershoot,
-                Math.max(0, segMaxTemp - currentSet));
+        double tolerance = 0.02 * newSetpoint;
+        double maxTemp = actualTemps.stream()
+                .skip(stepIndex)
+                .mapToDouble(Double::doubleValue)
+                .max()
+                .orElse(newSetpoint);
+        double overshoot = Math.max(0.0, maxTemp - newSetpoint);
 
-        /* ------- итоговые формулы ------- */
-        int n = rows.size();
-        double mae  = absErrSum / n;                // (2.14)
-        double mse  = sqErrSum  / n;                // (2.15)
-        double rmse = Math.sqrt(mse);               // (2.15)
-        double kWh  = joules / 3_600_000;           // привели к кВт·ч
+        double settlingTimeS;
+        {
+            int settlingIndex = -1;
+            outer:
+            for (int i = stepIndex; i < n; i++) {
+                if (Math.abs(actualTemps.get(i) - newSetpoint) > tolerance)
+                    continue;
 
-        return new MetricsDTO(mae, mse, rmse, kWh, maxOvershoot, worstSettling);
+                for (int j = i + 1; j < n; j++) {
+                    if (Math.abs(actualTemps.get(j) - newSetpoint) > tolerance) {
+                        continue outer;
+                    }
+                }
+                settlingIndex = i;
+                break;
+            }
+
+            if (settlingIndex < 0) {
+                settlingTimeS = -1.0;
+            } else {
+                settlingTimeS = (settlingIndex - stepIndex) * dtSeconds;
+            }
+        }
+
+        return new MetricsDTO(mae, mse, rmse, energyKWh, overshoot, settlingTimeS);
     }
 }

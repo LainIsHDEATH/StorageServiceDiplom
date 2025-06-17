@@ -2,11 +2,7 @@ package diplom.work.storageservice.controller.ai_model;
 
 import diplom.work.storageservice.dto.ai_model.AiModelDTO;
 import diplom.work.storageservice.dto.ai_model.AiModelListResponseDTO;
-import diplom.work.storageservice.dto.pid_config.PidConfigDTO;
-import diplom.work.storageservice.dto.pid_config.PidConfigListResponseDTO;
-import diplom.work.storageservice.dto.user.UserResponseDTO;
 import diplom.work.storageservice.model.ai_model.AiModel;
-import diplom.work.storageservice.model.pid_config.PidConfig;
 import diplom.work.storageservice.service.ai_model.AiModelService;
 import diplom.work.storageservice.util.AiModelMapper;
 import lombok.RequiredArgsConstructor;

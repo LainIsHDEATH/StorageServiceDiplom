@@ -8,5 +8,5 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/StorageService-1.0.0.jar StorageService.jar
-EXPOSE 8080
+EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "StorageService.jar"]
